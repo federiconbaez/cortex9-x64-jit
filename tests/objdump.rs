@@ -1,14 +1,33 @@
-//! Disassemble the encoder's output with GNU objdump (if installed) and
-//! compare against the intended instructions.
+//! Disassemble the encoder's output with GNU objdump and compare against
+//! the intended instructions.
+//!
+//! If `objdump` is missing, the test panics when `CX9_REQUIRE_OBJDUMP=1` or
+//! `CI=true`. Otherwise it skips and prints a visible message to stderr.
 #![cfg(target_os = "linux")]
 
 use cortex9_x64_jit::asm::{Alu, Asm, Cond, Reg::*};
 use std::process::Command;
 
+fn env_flag(name: &str) -> bool {
+    std::env::var(name)
+        .ok()
+        .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes"))
+        .unwrap_or(false)
+}
+
+fn objdump_is_required() -> bool {
+    env_flag("CX9_REQUIRE_OBJDUMP") || env_flag("CI")
+}
+
 #[test]
 fn objdump_agrees_with_encoder() {
     if Command::new("objdump").arg("--version").output().is_err() {
-        eprintln!("objdump not installed; skipping");
+        if objdump_is_required() {
+            panic!(
+                "objdump is required (CX9_REQUIRE_OBJDUMP=1 or CI=true) but was not found in PATH"
+            );
+        }
+        eprintln!("objdump not installed; skipping objdump_agrees_with_encoder (allowed locally; CI and CX9_REQUIRE_OBJDUMP=1 require it). Run cargo test -- --nocapture to see this message.");
         return;
     }
     let mut a = Asm::new();

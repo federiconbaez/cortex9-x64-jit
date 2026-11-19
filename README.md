@@ -38,7 +38,7 @@ cargo test --release
 cargo run --release --example bench
 ```
 
-El test `objdump_agrees_with_encoder` se omite en silencio si `objdump` no está instalado.
+El test `objdump_agrees_with_encoder` necesita GNU `objdump` (paquete `binutils`). En local, si no está instalado, se omite y escribe un mensaje en stderr (`cargo test -- --nocapture` lo muestra). En CI, o con `CX9_REQUIRE_OBJDUMP=1` o `CI=true`, la ausencia de `objdump` hace fallar el test. El workflow instala `binutils` y define `CX9_REQUIRE_OBJDUMP=1`.
 
 ## Qué está probado
 
@@ -48,7 +48,7 @@ El test `objdump_agrees_with_encoder` se omite en silencio si `objdump` no está
 | `asm::tests` | Bytes esperados de cada forma que usa el encoder, y la resolución de saltos hacia adelante y hacia atrás. |
 | `tests/diff.rs` | El JIT y el intérprete coinciden: bucle `sum 1..=100` (y la trampa por combustible), las doce operaciones binarias y los dos unarios sobre valores de borde, barajado y una pila de 255 ranuras, un `Jmp` infinito detenido por combustible, 2 000 programas generados en debug / 20 000 en release (con saltos y bucles contados) vía proptest, y bytes aleatorios que pasan el verificador después de `decode`. Hay semillas de regresión en `tests/diff.proptest-regressions`. |
 | `tests/wx.rs` (Linux) | Tras compilar, `/proc/self/maps` muestra `r-x` en la región del código, y ningún mapeo del proceso es a la vez `w` y `x`. |
-| `tests/objdump.rs` (Linux, si hay `objdump`) | `objdump -D -b binary -m i386:x86-64 -M intel` coincide con las mnemónicas previstas del encoder. |
+| `tests/objdump.rs` (Linux) | `objdump -D -b binary -m i386:x86-64 -M intel` coincide con las mnemónicas previstas del encoder. En local puede omitirse si falta `objdump` (con un mensaje en stderr); el CI lo exige. |
 
 En esta máquina, `cargo test` y `cargo test --release` pasaron **15 tests** (5 unitarios + 7 diferenciales + 1 objdump + 2 W^X). No hay tests de documentación.
 
@@ -71,7 +71,7 @@ Las llamadas al JIT pagan una llamada indirecta y, en el bucle, el chequeo de co
 
 ## Qué no está medido ni verificado
 
-- El CI de GitHub Actions **no es verificable en local**: el flujo existe en `.github/workflows/ci.yml` (fmt, clippy `-D warnings` y `cargo test` en `ubuntu-latest`), pero no se ejecutó en GitHub desde este árbol.
+- El CI de GitHub Actions **no es verificable en local**: el flujo existe en `.github/workflows/ci.yml` (instala `binutils`, `CX9_REQUIRE_OBJDUMP=1`, fmt, clippy `-D warnings` y `cargo test` en `ubuntu-latest`), pero no se ejecutó en GitHub desde este árbol.
 - `rust-version = "1.75"` está declarado en `Cargo.toml`; en esta máquina solo se compiló y se probaron los tests con rustc 1.100.0. No se corrió una build con 1.75.
 - No hay tests en macOS ni en otras Unix no Linux. El módulo `jit` se compilaría en cualquier Unix `x86_64`, pero no se ejecutó fuera de Linux. El test W^X lee `/proc/self/maps` y solo corre en Linux.
 - No hay soporte de ejecución JIT en Windows ni en arquitecturas que no sean x86-64: el módulo `jit` ni siquiera se compila ahí.

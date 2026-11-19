@@ -1,0 +1,14 @@
+[package]
+name = "cortex9-x64-jit"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "Apache-2.0"
+description = "JIT compiler from a small stack bytecode to x86-64 with a hand-written encoder, W^X memory and differential testing against an interpreter"
+repository = "https://github.com/federiconbaez/cortex9-x64-jit"
+
+[dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+proptest = "1"
